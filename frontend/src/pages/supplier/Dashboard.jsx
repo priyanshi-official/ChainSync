@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Users, Package, ClipboardList, Building2, RefreshCw, ArrowUpRight } from 'lucide-react'
+import { Users, Package, ClipboardList, Building2 } from 'lucide-react'
 import { getSupplierRequests, getMySupplierProfile, createSupplierProfile, getMySupplierProducts, getReceivedSupplierPurchaseOrders, getMyManufacturers } from '../../services/supplierService'
 
 function Dashboard() {
-  const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -88,9 +86,7 @@ function Dashboard() {
 
         <form onSubmit={handleProfileSubmit} className="space-y-4 rounded-2xl bg-[#0d211a] p-5 text-[#edf8f2] sm:p-6">
           <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-[#19372a] p-2.5 text-[#42dda0]">
-              <Building2 size={22} />
-            </span>
+            <span className="rounded-xl bg-[#19372a] p-2.5 text-[#42dda0]"><Building2 size={22} /></span>
             <h3 className="text-lg font-semibold">Company Details</h3>
           </div>
 
@@ -123,20 +119,18 @@ function Dashboard() {
   }
 
   const cards = [
-    { label: 'Pending Requests', value: stats.requests, icon: Users, path: '/supplier/requests' },
-    { label: 'My Products', value: stats.products, icon: Package, path: '/supplier/products' },
-    { label: 'Manufacturers', value: stats.manufacturers, icon: Building2, path: '/supplier/manufacturers' },
-    { label: 'Purchase Orders', value: stats.orders, icon: ClipboardList, path: '/supplier/purchase-orders' }
+    { label: 'Pending Requests', value: stats.requests, icon: Users },
+    { label: 'My Products', value: stats.products, icon: Package },
+    { label: 'Manufacturers', value: stats.manufacturers, icon: Building2 },
+    { label: 'Purchase Orders', value: stats.orders, icon: ClipboardList }
   ]
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-[#16865b]">Supplier Workspace</p>
-          <h2 className="mt-1 text-2xl font-bold text-[#0d211a]">Welcome, {profile.companyName || 'Supplier'}</h2>
-          <p className="mt-1 text-sm text-[#557064]">Here is an overview of your business activity.</p>
-        </div>
+      <div>
+        <p className="text-sm font-medium text-[#16865b]">Supplier Workspace</p>
+        <h2 className="mt-1 text-2xl font-bold text-[#0d211a]">Welcome, {profile.companyName || 'Supplier'}</h2>
+        <p className="mt-1 text-sm text-[#557064]">Here is an overview of your business activity.</p>
       </div>
 
       {error && <p className="rounded-xl bg-red-500/10 p-4 text-sm text-red-600">{error}</p>}
@@ -145,18 +139,17 @@ function Dashboard() {
         {cards.map(card => {
           const Icon = card.icon
           return (
-            <button key={card.label} onClick={() => navigate(card.path)}
-              className="rounded-2xl bg-[#0d211a] p-5 text-left text-[#edf8f2] transition hover:-translate-y-0.5 hover:bg-[#10271e] hover:shadow-lg">
-              <div className="flex items-center justify-between">
+            <div key={card.label}
+              className="rounded-2xl bg-[#0d211a] p-5 text-left text-[#edf8f2]">
+              <div className="flex items-center">
                 <span className="rounded-xl bg-[#19372a] p-3 text-[#42dda0]">
                   <Icon size={22} />
                 </span>
-                <ArrowUpRight size={18} className="text-[#9bb9aa]" />
               </div>
-              <p className="mt-5 text-sm text-[#c5d8d0]">{card.label}</p>
+              <p className="mt-2 text-sm text-[#c5d8d0]">{card.label}</p>
               <p className="mt-1 text-3xl font-bold">{loading ? '—' : card.value}</p>
               <p className="mt-2 text-xs text-[#9bb9aa]">View details</p>
-            </button>
+            </div>
           )
         })}
       </div>

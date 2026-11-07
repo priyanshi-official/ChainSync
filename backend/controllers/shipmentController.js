@@ -42,28 +42,37 @@ const createShipment = async (req, res) => {
     }
 }
 
-//distributor
+
 
 const getMyShipments = async (req, res) => {
-  try {
-    const filter = req.user.role === "manufacturer"
-      ? { manufacturer: req.user.id }
-      : { distributor: req.user.id }
+    try {
+        const filter = req.user.role === "manufacturer"
+            ? { manufacturer: req.user.id }
+            : { distributor: req.user.id }
 
-    const shipments = await Shipment.find(filter)
-      .populate("order")
-      .populate("manufacturer", "name email")
-      .populate("distributor", "name email")
-      .sort({ createdAt: -1 })
+        const shipments = await Shipment.find(filter)
+            .populate("order")
+            .populate({
+                path: "purchaseOrder",
+                select: "material quantity status unitPrice totalAmount supplier",
+                populate: {
+                    path: "supplier",
+                    select: "name email"
+                }
+            })
+            .populate("manufacturer", "name email")
+            .populate("distributor", "name email")
+            .sort({ createdAt: -1 })
 
-    return res.status(200).json({ shipments })
-  } catch (error) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message,
-    })
-  }
+        return res.status(200).json({ shipments })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Server error",
+            error: error.message
+        })
+    }
 }
+
 
 
 
@@ -72,22 +81,38 @@ const updateShipmentStatus = async (req, res) => {
         const { shipmentId, status } = req.body
 
         if (!shipmentId || !status) {
-            return res.status(400).json({ message: "Shipment ID and status are required" })
+            return res.status(400).json({
+                message: "Shipment ID and status are required"
+            })
         }
 
-        const allowedStatuses = ["processing", "shipped", "in_transit", "delivered"]
+        const allowedStatuses = [
+            "processing",
+            "shipped",
+            "in_transit",
+            "delivered"
+        ]
 
         if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({ message: "Invalid shipment status" })
+            return res.status(400).json({
+                message: "Invalid shipment status"
+            })
         }
 
         const shipment = await Shipment.findOne({
             _id: shipmentId,
-            manufacturer: req.user.id
+            manufacturer: req.user.id,
+            order: { $exists: true, $ne: null },
+            $or: [
+                { purchaseOrder: { $exists: false } },
+                { purchaseOrder: null }
+            ]
         })
 
         if (!shipment) {
-            return res.status(404).json({ message: "Shipment not found" })
+            return res.status(404).json({
+                message: "Distributor shipment not found"
+            })
         }
 
         shipment.status = status
@@ -108,10 +133,15 @@ const updateShipmentStatus = async (req, res) => {
             type: "shipment_update"
         })
 
-        res.status(200).json({ message: `Shipment ${status}`, shipment })
-
+        return res.status(200).json({
+            message: `Shipment ${status}`,
+            shipment
+        })
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message })
+        return res.status(500).json({
+            message: "Server error",
+            error: error.message
+        })
     }
 }
 
