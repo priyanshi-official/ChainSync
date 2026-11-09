@@ -1,18 +1,48 @@
 import { useEffect, useState } from 'react'
-import { Package, AlertTriangle, ClipboardList, Truck, CreditCard, RefreshCw } from 'lucide-react'
-import { getSupplyChainHealth } from '../../services/dashboardService'
+import {
+  Package,
+  AlertTriangle,
+  ClipboardList,
+  Truck,
+  CreditCard,
+  RefreshCw
+} from 'lucide-react'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip
+} from 'recharts'
+import {
+  getSupplyChainHealth,
+  getDistributorOrders
+} from '../../services/dashboardService'
+
+const STATUS_COLORS = {
+  pending: '#FACC15',
+  accepted: '#A78BFA',
+  rejected: '#FF6B6B'
+}
 
 function Dashboard() {
   const [health, setHealth] = useState(null)
+  const [distributorOrders, setDistributorOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const loadDashboard = async () => {
     setLoading(true)
     setError('')
+
     try {
-      const healthData = await getSupplyChainHealth()
+      const [healthData, orderData] = await Promise.all([
+        getSupplyChainHealth(),
+        getDistributorOrders()
+      ])
+
       setHealth(healthData)
+      setDistributorOrders(orderData.orders || [])
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load dashboard data.')
     } finally {
@@ -32,6 +62,30 @@ function Dashboard() {
     { label: 'Pending Payments', value: health?.pendingPayments ?? 0, icon: CreditCard }
   ]
 
+  const orderStatusData = [
+    {
+      name: 'Pending',
+      value: distributorOrders.filter(order => order.status === 'pending').length,
+      color: STATUS_COLORS.pending
+    },
+    {
+      name: 'Accepted',
+      value: distributorOrders.filter(order => order.status === 'accepted').length,
+      color: STATUS_COLORS.accepted
+    },
+    {
+      name: 'Rejected',
+      value: distributorOrders.filter(order => order.status === 'rejected').length,
+      color: STATUS_COLORS.rejected
+    }
+  ]
+
+  const totalOrders = distributorOrders.length
+
+  const chartData = totalOrders
+    ? orderStatusData.filter(item => item.value > 0)
+    : [{ name: 'No orders', value: 1, color: '#29483a' }]
+
   if (loading) return (
     <div className="flex min-h-64 items-center justify-center gap-3 text-[#557064]">
       <RefreshCw className="animate-spin" size={20} /> Loading dashboard...
@@ -46,7 +100,13 @@ function Dashboard() {
           <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#0d211a]">Overview</h2>
           <p className="mt-1 text-sm text-[#557064]">Monitor your inventory, procurement and distribution.</p>
         </div>
-        <button type="button" onClick={loadDashboard} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0d211a] px-4 py-2.5 text-sm font-semibold text-[#edf8f2] transition hover:bg-[#19372a] disabled:opacity-60">
+
+        <button
+          type="button"
+          onClick={loadDashboard}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0d211a] px-4 py-2.5 text-sm font-semibold text-[#edf8f2] transition hover:bg-[#19372a] disabled:opacity-60"
+        >
           <RefreshCw size={16} /> Refresh data
         </button>
       </div>
@@ -54,7 +114,9 @@ function Dashboard() {
       {error && (
         <div className="flex flex-col gap-3 rounded-xl bg-red-100 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
           <p>{error}</p>
-          <button type="button" onClick={loadDashboard} className="font-semibold underline">Try again</button>
+          <button type="button" onClick={loadDashboard} className="font-semibold underline">
+            Try again
+          </button>
         </div>
       )}
 
@@ -66,56 +128,137 @@ function Dashboard() {
                 <p className="text-sm text-[#c5d8d0]">{label}</p>
                 <p className="mt-2 text-2xl font-bold tabular-nums text-[#edf8f2]">{value}</p>
               </div>
-              <span className="rounded-xl bg-[#19372a] p-3 text-[#42dda0]"><Icon size={21} /></span>
+              <span className="rounded-xl bg-[#19372a] p-3 text-[#42dda0]">
+                <Icon size={21} />
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      <section className="rounded-2xl bg-[#0d211a] p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="font-bold text-[#edf8f2]">Inventory Snapshot</h3>
-            <p className="mt-1 text-sm text-[#9bb9aa]">Your current material stock</p>
-          </div>
-          <Package className="text-[#42dda0]" size={21} />
-        </div>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
 
-        {!health?.inventory?.length ? (
-          <div className="mt-5 rounded-xl bg-[#10271e] px-4 py-10 text-center">
-            <Package size={28} className="mx-auto text-[#42dda0]" />
-            <p className="mt-2 text-sm text-[#c5d8d0]">No inventory records yet.</p>
+        {/* Distributor Order Status Chart */}
+        <section className="rounded-2xl bg-[#0d211a] p-4 sm:p-5 xl:col-span-2">
+          <div>
+            <h3 className="font-bold text-[#edf8f2]">Distributor Order Status</h3>
+            <p className="mt-1 text-sm text-[#9bb9aa]">Overview of your distributor orders</p>
           </div>
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded-xl bg-[#10271e] p-3 sm:p-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <table className="w-full min-w-[450px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-[#29483a] text-[#9bb9aa]">
-                  <th className="pb-3 pr-4 font-medium">Material</th>
-                  <th className="pb-3 pr-4 font-medium">Quantity</th>
-                  <th className="pb-3 font-medium">Stock status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {health.inventory.map((item) => {
-                  const low = item.quantity < item.minStock
-                  return (
-                    <tr key={item._id} className="border-b border-[#29483a] last:border-0">
-                      <td className="py-4 pr-4 font-medium text-[#edf8f2]">{item.material}</td>
-                      <td className="py-4 pr-4 tabular-nums text-[#c5d8d0]">{item.quantity}</td>
-                      <td className="py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${low ? 'bg-[#fef3c7] text-[#92400e]' : 'bg-[#dff4e7] text-[#146b45]'}`}>
-                          {low ? 'Low stock' : 'Healthy'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+
+          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
+            <div className="relative h-[210px] w-full max-w-[230px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={88}
+                    paddingAngle={totalOrders ? 3 : 0}
+                    stroke="none"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#19372a',
+                      border: '1px solid #29483a',
+                      borderRadius: '10px',
+                      color: '#edf8f2'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold tabular-nums text-[#edf8f2]">
+                  {totalOrders}
+                </span>
+                <span className="text-xs font-medium text-[#9bb9aa]">TOTAL ORDERS</span>
+              </div>
+            </div>
+
+            <div className="w-full space-y-4 sm:w-auto sm:min-w-[125px]">
+              {orderStatusData.map(item => (
+                <div key={item.name} className="flex items-center justify-between gap-4 sm:justify-start">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-[#c5d8d0]">{item.name}</span>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums text-[#edf8f2]">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </section>
+        </section>
+
+        {/* Inventory Snapshot */}
+        <section className="rounded-2xl bg-[#0d211a] p-4 sm:p-5 xl:col-span-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-[#edf8f2]">Inventory Snapshot</h3>
+              <p className="mt-1 text-sm text-[#9bb9aa]">Your current material stock</p>
+            </div>
+            <Package className="text-[#42dda0]" size={21} />
+          </div>
+
+          {!health?.inventory?.length ? (
+            <div className="mt-5 rounded-xl bg-[#10271e] px-4 py-10 text-center">
+              <Package size={28} className="mx-auto text-[#42dda0]" />
+              <p className="mt-2 text-sm text-[#c5d8d0]">No inventory records yet.</p>
+            </div>
+          ) : (
+            <div
+              className="mt-4 overflow-x-auto rounded-xl bg-[#10271e] p-3 sm:p-4"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <table className="w-full min-w-[450px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[#29483a] text-[#9bb9aa]">
+                    <th className="pb-3 pr-4 font-medium">Material</th>
+                    <th className="pb-3 pr-4 font-medium">Quantity</th>
+                    <th className="pb-3 font-medium">Stock status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {health.inventory.map((item) => {
+                    const low = item.quantity < item.minStock
+
+                    return (
+                      <tr key={item._id} className="border-b border-[#29483a] last:border-0">
+                        <td className="py-4 pr-4 font-medium text-[#edf8f2]">
+                          {item.material}
+                        </td>
+                        <td className="py-4 pr-4 tabular-nums text-[#c5d8d0]">
+                          {item.quantity}
+                        </td>
+                        <td className="py-4">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${low ? 'bg-[#fef3c7] text-[#92400e]' : 'bg-[#dff4e7] text-[#146b45]'}`}>
+                            {low ? 'Low stock' : 'Healthy'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+      </div>
     </div>
   )
 }
