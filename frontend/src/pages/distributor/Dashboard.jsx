@@ -215,7 +215,7 @@ const Dashboard = () => {
     <div className="space-y-4 px-4 pb-4 pt-2 sm:px-6 sm:pb-6 sm:pt-3">
       <div>
         <p className="text-sm font-medium text-[#42dda0]">Distributor Workspace</p>
-        <h1 className="mt-1 text-2xl font-bold text-[#0d211a] dark:text-[#edf8f2]">
+        <h1 className="mt-1 text-xl font-bold text-[#0d211a] dark:text-[#edf8f2]">
           Distributor Dashboard
         </h1>
         <p className="mt-1 text-sm text-[#557064] dark:text-[#c5d8d0]">

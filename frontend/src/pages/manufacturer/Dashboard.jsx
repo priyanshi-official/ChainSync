@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {Package, AlertTriangle, ClipboardList, Truck, CreditCard, RefreshCw} from 'lucide-react'
 import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip} from 'recharts'
-import {getSupplyChainHealth, getDistributorOrder} from '../../services/dashboardService'
+import {getSupplyChainHealth, getDistributorOrders } from '../../services/dashboardService'
 
 const STATUS_COLORS = {
   pending: '#FACC15',
@@ -81,7 +81,7 @@ function Dashboard() {
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-semibold text-[#16865b]">Your business at a glance</p>
-          <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#0d211a]">Overview</h2>
+          <h2 className="mt-1 text-l font-bold tracking-tight text-[#0d211a]">Overview</h2>
           <p className="mt-1 text-sm text-[#557064]">Monitor your inventory, procurement and distribution.</p>
         </div>
 
