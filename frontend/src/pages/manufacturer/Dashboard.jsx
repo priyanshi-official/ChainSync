@@ -1,23 +1,7 @@
 import { useEffect, useState } from 'react'
-import {
-  Package,
-  AlertTriangle,
-  ClipboardList,
-  Truck,
-  CreditCard,
-  RefreshCw
-} from 'lucide-react'
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip
-} from 'recharts'
-import {
-  getSupplyChainHealth,
-  getDistributorOrders
-} from '../../services/dashboardService'
+import {Package, AlertTriangle, ClipboardList, Truck, CreditCard, RefreshCw} from 'lucide-react'
+import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip} from 'recharts'
+import {getSupplyChainHealth, getDistributorOrder} from '../../services/dashboardService'
 
 const STATUS_COLORS = {
   pending: '#FACC15',
